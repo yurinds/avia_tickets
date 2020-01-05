@@ -1,8 +1,10 @@
 import api from "../services/apiService";
 import { formatDate } from "../helpers/date";
+import { createUniqueToken } from "../helpers/token";
+import currencyUI from "../views/currency";
 
 class Locations {
-  constructor(api, helpers) {
+  constructor(api, currency, helpers) {
     this.api = api;
     this.countries = null;
     this.cities = null;
@@ -10,6 +12,8 @@ class Locations {
     this.airlines = null;
     this.lastSearch = null;
     this.formatDate = helpers.formatDate;
+    this.createToken = helpers.createUniqueToken;
+    this.currencySymbol = currency.getCurrencySymbol.bind(currency);
   }
 
   async init() {
@@ -48,16 +52,18 @@ class Locations {
     }, {});
   }
 
-  serializeTickets(tickets) {
-    return Object.values(tickets).map(ticket => {
+  serializeTickets({ data, currency }) {
+    return Object.values(data).map(ticket => {
       return {
         ...ticket,
+        currency: this.currencySymbol(currency),
         origin_name: this.getCityNameByCode(ticket.origin),
         destination_name: this.getCityNameByCode(ticket.destination),
         airline_logo: this.getAirlineLogoByCode(ticket.airline),
         airline_name: this.getAirlineNameByCode(ticket.airline),
         departure_at: this.formatDate(ticket.departure_at, "dd MMM yyyy hh:mm"),
-        return_at: this.formatDate(ticket.return_at, "dd MMM yyyy hh:mm")
+        return_at: this.formatDate(ticket.return_at, "dd MMM yyyy hh:mm"),
+        token: this.createToken()
       };
     });
   }
@@ -92,6 +98,11 @@ class Locations {
     return city.code;
   }
 
+  getTicketByToken(token) {
+    const ticket = this.lastSearch.find(item => item.token === token);
+    return ticket;
+  }
+
   getAirlineNameByCode(code) {
     return this.airlines[code] ? this.airlines[code].name : "";
   }
@@ -102,10 +113,14 @@ class Locations {
 
   async fetchTickets(params) {
     const response = await this.api.prices(params);
-    this.lastSearch = this.serializeTickets(response.data);
+
+    this.lastSearch = this.serializeTickets(response);
   }
 }
 
-const locations = new Locations(api, { formatDate });
+const locations = new Locations(api, currencyUI, {
+  formatDate,
+  createUniqueToken
+});
 
 export default locations;

@@ -24,3 +24,6 @@ M.Datepicker.init(datepickers, { showClearBtn: true, format: "yyyy-mm" });
 export function getDatepickerInstance(element) {
   return M.Datepicker.getInstance(element);
 }
+
+const dropdowns = document.querySelectorAll(".dropdown-trigger");
+M.Dropdown.init(dropdowns);
